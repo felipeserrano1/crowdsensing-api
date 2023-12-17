@@ -66,11 +66,7 @@ public class CrowdsensingController {
             JsonNode elementsArray = jsonNode.get("elements");
 
 
-            /*
-                (estando en main(
-                            git chekcout -b feature/"nombre de la feature"
-
-             */
+            
             if (elementsArray != null && elementsArray.isArray()) {
                 Iterator<JsonNode> elementsIterator = elementsArray.elements();
                 while (elementsIterator.hasNext()) {
