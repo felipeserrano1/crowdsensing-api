@@ -1,7 +1,7 @@
 package com.example.apicrowdsensing.controllers;
 
 import com.example.apicrowdsensing.models.Park;
-import com.example.apicrowdsensing.models.Track;
+import com.example.apicrowdsensing.models.Path;
 import com.example.apicrowdsensing.models.Point;
 import com.example.apicrowdsensing.services.CrowdsensingService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,11 +14,11 @@ import org.springframework.web.bind.annotation.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.awt.*;
 import java.io.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
+
 
 @RestController
 public class CrowdsensingController {
@@ -30,6 +30,7 @@ public class CrowdsensingController {
             "area[name=\"" + this.city + "\"]->.searchArea;\n" +
             "nwr[\"leisure\"=\"park\"](area.searchArea);\n" +
             "out geom;";
+
 
     @Autowired
     public CrowdsensingController(CrowdsensingService crowdsensingService) {
@@ -51,22 +52,18 @@ public class CrowdsensingController {
                             "out geom;")
                     .asString();
 
-            Path path = Paths.get("src", "main", "resources", "response.json");
             ObjectMapper objectMapper = new ObjectMapper();
-
             try {
                 Object json = objectMapper.readValue(response.getBody().toString(), Object.class);
-                objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(path.toString()), json);
+                objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File("src/main/resources/response.json"), json);
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
-            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(new File(path.toString()));
+            String filePath = "src/main/resources/response.json";
+            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(new File(filePath));
             JsonNode elementsArray = jsonNode.get("elements");
-
-
-            
             if (elementsArray != null && elementsArray.isArray()) {
                 Iterator<JsonNode> elementsIterator = elementsArray.elements();
                 while (elementsIterator.hasNext()) {
@@ -99,14 +96,13 @@ public class CrowdsensingController {
                     ObjectMapper objectMapper = new ObjectMapper();
                     objectMapper.registerModule(new JavaTimeModule());
                     try {
-                        Path path = Paths.get("src", "main", "resources", "tracks.json");
-                        File file = new File(path.toString());
-                        ArrayList<Track> tracks = new ArrayList<>();
-                        Track[] objetos = objectMapper.readValue(file, Track[].class);
-                        for(Track t: objetos) {
-                            tracks.add(t);
+                        File file = new File("src/main/resources/paths.json");
+                        ArrayList<Path> paths = new ArrayList<>();
+                        Path[] objetos = objectMapper.readValue(file, Path[].class);
+                        for(Path pa: objetos) {
+                            paths.add(pa);
                         }
-                        return crowdsensingService.getTraficByPark(p, tracks);
+                        return crowdsensingService.getTraficByPark(p, paths);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
