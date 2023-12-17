@@ -4,9 +4,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
-public class Path {
+public class Track {
     @JsonProperty("id")
     private int id;
     @JsonProperty("name")
@@ -15,12 +14,12 @@ public class Path {
     private Point point;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate date;
-    //private ArrayList<Punto> path;
+    //private ArrayList<Point> path;
 
-    public Path() {
+    public Track() {
     }
 
-    public Path(int id, String name, Point point, LocalDate date) {
+    public Track(int id, String name, Point point, LocalDate date) {
         this.id = id;
         this.name = name;
         this.point = point;
@@ -33,10 +32,6 @@ public class Path {
 
     public String getName() {
         return name;
-    }
-
-    public void setPoint(Point point) {
-        this.point = point;
     }
 
     public Point getPoint() {

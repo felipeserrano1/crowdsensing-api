@@ -1,16 +1,12 @@
 package com.example.apicrowdsensing.services;
 
 import com.example.apicrowdsensing.models.Park;
-import com.example.apicrowdsensing.models.Path;
+import com.example.apicrowdsensing.models.Track;
 import com.example.apicrowdsensing.models.Point;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 
-import java.awt.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 @Service
@@ -19,10 +15,10 @@ public class CrowdsensingService {
     @Autowired
     public CrowdsensingService() {}
 
-    public int getTraficByPark(Park park, ArrayList<Path> paths) {
+    public int getTraficByPark(Park park, ArrayList<Track> tracks) {
         int i = 0;
         LocalDate localDate = LocalDate.now();
-        for(Path p: paths) {
+        for(Track p: tracks) {
             LocalDate date = p.getDate();
             if (localDate.isEqual(date) && (pointInsidePoligon(p.getPoint(), park.getPoints()))){
                 i++;
