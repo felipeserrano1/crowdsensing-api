@@ -3,6 +3,7 @@ package com.example.apicrowdsensing.models;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class Path {
@@ -10,21 +11,20 @@ public class Path {
     private int id;
     @JsonProperty("name")
     private String name;
-
-    @JsonProperty("punto")
-    private Punto punto;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-    private LocalDateTime dateTime;
+    @JsonProperty("point")
+    private Point point;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate date;
     //private ArrayList<Punto> path;
 
     public Path() {
     }
 
-    public Path(int id, String name, LocalDateTime dateTime, Punto punto) {
+    public Path(int id, String name, Point point, LocalDate date) {
         this.id = id;
         this.name = name;
-        this.dateTime = dateTime;
-        this.punto = punto;
+        this.point = point;
+        this.date = date;
     }
 
     public int getId() {
@@ -35,23 +35,15 @@ public class Path {
         return name;
     }
 
-    public Punto getPunto() {
-        return punto;
+    public void setPoint(Point point) {
+        this.point = point;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public Point getPoint() {
+        return point;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setPunto(Punto punto) {
-        this.punto = punto;
-    }
-
-    public LocalDateTime getDateTime() {
-        return dateTime;
+    public LocalDate getDate() {
+        return date;
     }
 }
