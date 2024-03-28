@@ -31,4 +31,12 @@ public class Park {
                 ", points=" + points +
                 '}';
     }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Park park = (Park) o;
+        return id == park.id;
+    }
+
 }
