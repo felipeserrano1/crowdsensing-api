@@ -10,7 +10,6 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -139,4 +138,22 @@ public class CrowdsensingController {
         return crowdsensingService.getMarkers(elementsArray, tracks, parks, initialDate, finalDate);
     }
 
+@GetMapping("/markers")
+    public ResponseEntity<String> getMarkers(@RequestParam("initialDate") LocalDate initialDate,
+                                             @RequestParam("finalDate") LocalDate finalDate) throws IOException {
+        Path path = Paths.get("src", "main", "resources", "response.json");
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(new File(path.toString()));
+        JsonNode elementsArray = jsonNode.get("elements");
+
+        Path path2 = Paths.get("src", "main", "resources", "tracks.json");
+        File file = path2.toFile();
+        ArrayList<Track> tracks = new ArrayList<>();
+        Track[] objetos = objectMapper.readValue(file, Track[].class);
+        for(Track t: objetos) {
+            tracks.add(t);
+        }
+        return crowdsensingService.getMarkers(elementsArray, tracks, parks, initialDate, finalDate);
+    }
 }
