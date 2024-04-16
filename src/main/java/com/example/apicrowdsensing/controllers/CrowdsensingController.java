@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -34,6 +35,8 @@ public class CrowdsensingController {
 
     @Autowired
     public CrowdsensingController(CrowdsensingService crowdsensingService) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         this.crowdsensingService = crowdsensingService;
     }
 
@@ -93,31 +96,32 @@ public class CrowdsensingController {
         }
     }
 
-    @GetMapping("/traffic/id/{id}")
-    public int getTraficByPark(@PathVariable(value="id") int parkId) throws Exception {
-        for (Park p : parks) {
-                if (p.getId() == parkId) {
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    objectMapper.registerModule(new JavaTimeModule());
-                    try {
-                        Path path = Paths.get("src", "main", "resources", "tracks.json");
-                        File file = new File(path.toString());
-                        ArrayList<Track> tracks = new ArrayList<>();
-                        Track[] objetos = objectMapper.readValue(file, Track[].class);
-                        for(Track t: objetos) {
-                            tracks.add(t);
-                        }
-                        return crowdsensingService.getTraficByPark(p, tracks);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-        }
-        return -1;
-    }
+//    @GetMapping("/traffic/id/{id}")
+//    public int getTraficByPark(@PathVariable(value="id") int parkId) throws Exception {
+//        for (Park p : parks) {
+//                if (p.getId() == parkId) {
+//                    ObjectMapper objectMapper = new ObjectMapper();
+//                    objectMapper.registerModule(new JavaTimeModule());
+//                    try {
+//                        Path path = Paths.get("src", "main", "resources", "tracks.json");
+//                        File file = new File(path.toString());
+//                        ArrayList<Track> tracks = new ArrayList<>();
+//                        Track[] objetos = objectMapper.readValue(file, Track[].class);
+//                        for(Track t: objetos) {
+//                            tracks.add(t);
+//                        }
+//                        return crowdsensingService.getTraficByPark(p, tracks);
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//        }
+//        return -1;
+//    }
 
     @GetMapping("/markers")
-    public ResponseEntity<String> getMarkers() throws IOException {
+    public ResponseEntity<String> getMarkers(@RequestParam("initialDate") LocalDate initialDate,
+                                             @RequestParam("finalDate") LocalDate finalDate) throws IOException {
         Path path = Paths.get("src", "main", "resources", "response.json");
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
@@ -131,7 +135,25 @@ public class CrowdsensingController {
         for(Track t: objetos) {
             tracks.add(t);
         }
-        return crowdsensingService.getMarkers(elementsArray, tracks, parks);
+        return crowdsensingService.getMarkers(elementsArray, tracks, parks, initialDate, finalDate);
     }
 
+@GetMapping("/markers")
+    public ResponseEntity<String> getMarkers(@RequestParam("initialDate") LocalDate initialDate,
+                                             @RequestParam("finalDate") LocalDate finalDate) throws IOException {
+        Path path = Paths.get("src", "main", "resources", "response.json");
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(new File(path.toString()));
+        JsonNode elementsArray = jsonNode.get("elements");
+
+        Path path2 = Paths.get("src", "main", "resources", "tracks.json");
+        File file = path2.toFile();
+        ArrayList<Track> tracks = new ArrayList<>();
+        Track[] objetos = objectMapper.readValue(file, Track[].class);
+        for(Track t: objetos) {
+            tracks.add(t);
+        }
+        return crowdsensingService.getMarkers(elementsArray, tracks, parks, initialDate, finalDate);
+    }
 }
