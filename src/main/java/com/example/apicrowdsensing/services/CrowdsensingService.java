@@ -1,13 +1,12 @@
 package com.example.apicrowdsensing.services;
 
-import com.example.apicrowdsensing.models.NewFormatMarker;
-import com.example.apicrowdsensing.models.Park;
-import com.example.apicrowdsensing.models.Track;
-import com.example.apicrowdsensing.models.Point;
+import com.example.apicrowdsensing.models.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -22,17 +21,25 @@ public class CrowdsensingService {
     @Autowired
     public CrowdsensingService() {}
 
-    public int getTraficByPark(Park park, ArrayList<Track> tracks) {
-        int i = 0;
-        LocalDate localDate = LocalDate.now();
+    public ArrayList<DateTraffic> getTraficByPark(Park park, ArrayList<Track> tracks, LocalDate initialDate, LocalDate finalDate) {
+        ArrayList<DateTraffic> l = new ArrayList<>();
         for(Track p: tracks) {
             LocalDate date = p.getDate();
-            if (localDate.isEqual(date) && (pointInsidePoligon(p.getPoint(), park.getPoints()))){
-                i++;
-                System.out.println(p.getName());
+            if ((date.isBefore(finalDate) || date.isEqual(finalDate)) && (date.isAfter(initialDate) || date.isEqual(initialDate)) && (pointInsidePoligon(p.getPoint(), park.getPoints()))){
+                boolean contains = false;
+                for(DateTraffic d: l) {
+                    if(d.getDate().equals(date)) {
+                        d.addTraffic();
+                        contains = true;
+                        break;
+                    }
+                }
+                if(contains == false) {
+                    l.add(new DateTraffic(date));
+                }
             }
         }
-        return i;
+        return l;
     }
 
     public static boolean pointInsidePoligon(Point point, ArrayList<Point> poligon) {
@@ -51,9 +58,14 @@ public class CrowdsensingService {
         return intersections % 2 == 1;
     }
 
-    public ResponseEntity<String> getMarkers(JsonNode elementsArray, ArrayList<Track> tracks, ArrayList<Park> parks) throws JsonProcessingException {
-        List<NewFormatMarker> result = new ArrayList<>();
+    public ResponseEntity<String> getMarkers(JsonNode elementsArray, ArrayList<Track> tracks, ArrayList<Park> parks, LocalDate initialDate, LocalDate finalDate) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.findAndRegisterModules();
+        while(parks.isEmpty()) {
+            if(parks != null)
+                break;
+        }
+        List<NewFormatMarker> result = new ArrayList<>();
         if (elementsArray != null && elementsArray.isArray()) {
             Iterator<JsonNode> elementsIterator = elementsArray.elements();
             int id;
@@ -79,16 +91,14 @@ public class CrowdsensingService {
                     lon = element.get("lon").asDouble();
                 }
                 for(Park p: parks) {
+                    String name = null;
                     if (p.getId() == id) {
                         ArrayList<Object> popUp = new ArrayList<>();
                         if(tags.get("name") != null) {
-                            popUp.add(tags.get("name").asText());
+                            name = tags.get("name").asText();
                         }
-                        int trafic = getTraficByPark(p, tracks);
-                        if(trafic > 0) {
-                            popUp.add(trafic);
-                            result.add(new NewFormatMarker(new double[]{lat, lon}, popUp));
-                        }
+                        ArrayList<DateTraffic> traffic = getTraficByPark(p, tracks, initialDate, finalDate);
+                        result.add(new NewFormatMarker(new double[]{lat, lon}, name, traffic));
                         break;
                     }
                 }
