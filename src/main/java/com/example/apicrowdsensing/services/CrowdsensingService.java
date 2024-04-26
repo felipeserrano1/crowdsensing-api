@@ -4,13 +4,11 @@ import com.example.apicrowdsensing.models.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -21,23 +19,27 @@ public class CrowdsensingService {
     @Autowired
     public CrowdsensingService() {}
 
-    public ArrayList<DateTraffic> getTraficByPark(Park park, ArrayList<Track> tracks, LocalDate initialDate, LocalDate finalDate) {
+    public ArrayList<DateTraffic> getTraficByPark(Park park, List<Visitas> visitas) {
         ArrayList<DateTraffic> l = new ArrayList<>();
-        for(Track p: tracks) {
-            LocalDate date = p.getDate();
-            if ((date.isBefore(finalDate) || date.isEqual(finalDate)) && (date.isAfter(initialDate) || date.isEqual(initialDate)) && (pointInsidePoligon(p.getPoint(), park.getPoints()))){
-                boolean contains = false;
-                for(DateTraffic d: l) {
-                    if(d.getDate().equals(date)) {
-                        d.addTraffic();
-                        contains = true;
-                        break;
+        for(Visitas v: visitas) {
+                String[] partes = v.getCenter().substring(1, v.getCenter().length() - 1).split(",");
+                double primerCoordenada = Double.parseDouble(partes[0]);
+                double segundoCoordenada = Double.parseDouble(partes[1]);
+                if (pointInsidePoligon(new Point(primerCoordenada, segundoCoordenada), park.getPoints())) {
+                    long start_time = v.getStartTime();
+                    boolean contains = false;
+                    LocalDate date = Instant.ofEpochMilli(start_time).atZone(ZoneId.systemDefault()).toLocalDate();
+                    for (DateTraffic d : l) {
+                        if (d.getDate().isEqual(date)) {
+                            d.addTraffic();
+                            contains = true;
+                            break;
+                        }
+                    }
+                    if (contains == false) {
+                        l.add(new DateTraffic(date));
                     }
                 }
-                if(contains == false) {
-                    l.add(new DateTraffic(date));
-                }
-            }
         }
         return l;
     }
@@ -58,11 +60,11 @@ public class CrowdsensingService {
         return intersections % 2 == 1;
     }
 
-    public ResponseEntity<String> getMarkers(JsonNode elementsArray, ArrayList<Track> tracks, ArrayList<Park> parks, LocalDate initialDate, LocalDate finalDate) throws JsonProcessingException {
+    public ResponseEntity<String> getMarkers(JsonNode elementsArray, List<Visitas> visitas, ArrayList<Park> parks) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         mapper.findAndRegisterModules();
         while(parks.isEmpty()) {
-            if(parks != null)
+            if(!parks.isEmpty())
                 break;
         }
         List<NewFormatMarker> result = new ArrayList<>();
@@ -72,7 +74,6 @@ public class CrowdsensingService {
             double lat, lon;
             while (elementsIterator.hasNext()) {
                 JsonNode element = elementsIterator.next();
-
                 JsonNode tags = element.get("tags");
                 id = element.get("id").asInt();
                 if (element.has("bounds")) {
@@ -82,10 +83,8 @@ public class CrowdsensingService {
                     double maxlat = bounds.get("maxlat").asDouble();
                     double minlon = bounds.get("minlon").asDouble();
                     double maxlon = bounds.get("maxlon").asDouble();
-
                     lat = (minlat + maxlat) / 2;
                     lon = (minlon + maxlon) / 2;
-
                 } else {
                     lat = element.get("lat").asDouble();
                     lon = element.get("lon").asDouble();
@@ -93,11 +92,8 @@ public class CrowdsensingService {
                 for(Park p: parks) {
                     String name = null;
                     if (p.getId() == id) {
-                        ArrayList<Object> popUp = new ArrayList<>();
-                        if(tags.get("name") != null) {
-                            name = tags.get("name").asText();
-                        }
-                        ArrayList<DateTraffic> traffic = getTraficByPark(p, tracks, initialDate, finalDate);
+                        name = p.getName();
+                        ArrayList<DateTraffic> traffic = getTraficByPark(p, visitas);
                         result.add(new NewFormatMarker(new double[]{lat, lon}, name, traffic));
                         break;
                     }

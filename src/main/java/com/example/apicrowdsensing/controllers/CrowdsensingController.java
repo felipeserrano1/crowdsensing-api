@@ -3,6 +3,8 @@ package com.example.apicrowdsensing.controllers;
 import com.example.apicrowdsensing.models.Park;
 import com.example.apicrowdsensing.models.Track;
 import com.example.apicrowdsensing.models.Point;
+import com.example.apicrowdsensing.models.Visitas;
+import com.example.apicrowdsensing.repositories.ViajeRepository;
 import com.example.apicrowdsensing.services.CrowdsensingService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -10,6 +12,7 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,12 +22,18 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 
 @RestController
 public class CrowdsensingController {
     private CrowdsensingService crowdsensingService;
+    private ViajeRepository viajeRepository;
     private String city;
     private ArrayList<Park> parks = new ArrayList<>();
     private String query =
@@ -34,90 +43,76 @@ public class CrowdsensingController {
             "out geom;";
 
     @Autowired
-    public CrowdsensingController(CrowdsensingService crowdsensingService) {
+    public CrowdsensingController(CrowdsensingService crowdsensingService, ViajeRepository viajeRepository) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
+        this.viajeRepository = viajeRepository;
         this.crowdsensingService = crowdsensingService;
     }
 
     @GetMapping("/query/city/{city}")
     public void getQuery(@PathVariable(value="city") String city) throws Exception {
-        this.city = city;
-        this.parks.clear();
-        try {
-            Unirest.setTimeouts(0, 0);
-
-            HttpResponse<String> response = Unirest.post("https://overpass-api.de/api/interpreter")
-                    .header("Content-Type", "text/plain")
-                    .body("[out:json][timeout:25];\n" +
-                            "area[name=\"" + this.city + "\"]->.searchArea;\n" +
-                            "nwr[\"leisure\"=\"park\"](area.searchArea);\n" +
-                            "out geom;")
-                    .asString();
-
-            Path path = Paths.get("src", "main", "resources", "response.json");
-            ObjectMapper objectMapper = new ObjectMapper();
-
+        if(this.city != city) {
+            this.city = city;
+            this.parks.clear();
             try {
-                Object json = objectMapper.readValue(response.getBody().toString(), Object.class);
-                objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(path.toString()), json);
+                Unirest.setTimeouts(0, 0);
 
+                HttpResponse<String> response = Unirest.post("https://overpass-api.de/api/interpreter")
+                        .header("Content-Type", "text/plain")
+                        .body("[out:json][timeout:25];\n" +
+                                "area[name=\"" + this.city + "\"]->.searchArea;\n" +
+                                "nwr[\"leisure\"=\"park\"](area.searchArea);\n" +
+                                "out geom;")
+                        .asString();
+
+                Path path = Paths.get("src", "main", "resources", "response.json");
+                ObjectMapper objectMapper = new ObjectMapper();
+
+                try {
+                    Object json = objectMapper.readValue(response.getBody().toString(), Object.class);
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(path.toString()), json);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(new File(path.toString()));
+                JsonNode elementsArray = jsonNode.get("elements");
+
+
+
+                if (elementsArray != null && elementsArray.isArray()) {
+                    Iterator<JsonNode> elementsIterator = elementsArray.elements();
+                    while (elementsIterator.hasNext()) {
+                        JsonNode element = elementsIterator.next();
+                        if (element.has("geometry")) {
+                            ArrayList<Point> nodes = new ArrayList<>();
+                            JsonNode geometry = element.get("geometry");
+                            JsonNode tags = element.get("tags");
+                            var park = new Park(element.get("id").asInt());
+                            String name = "Parque";
+                            if(tags.get("name") != null) {
+                                name = tags.get("name").asText();
+                            }
+                            park.setName(name);
+                            Iterator<JsonNode> geometryIterator = geometry.elements();
+                            while(geometryIterator.hasNext()) {
+                                JsonNode geometryElement = geometryIterator.next();
+                                double lat = geometryElement.get("lat").asDouble();
+                                double lon = geometryElement.get("lon").asDouble();
+                                var p = new Point(lat, lon);
+                                park.addPoint(p);
+                            }
+                            parks.add(park);
+                        }
+                    }
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
-            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(new File(path.toString()));
-            JsonNode elementsArray = jsonNode.get("elements");
-
-
-            
-            if (elementsArray != null && elementsArray.isArray()) {
-                Iterator<JsonNode> elementsIterator = elementsArray.elements();
-                while (elementsIterator.hasNext()) {
-                    JsonNode element = elementsIterator.next();
-                    if (element.has("geometry")) {
-                        ArrayList<Point> nodes = new ArrayList<>();
-                        JsonNode geometry = element.get("geometry");
-                        var park = new Park(element.get("id").asInt());
-                        Iterator<JsonNode> geometryIterator = geometry.elements();
-                        while(geometryIterator.hasNext()) {
-                            JsonNode geometryElement = geometryIterator.next();
-                            double lat = geometryElement.get("lat").asDouble();
-                            double lon = geometryElement.get("lon").asDouble();
-                            var p = new Point(lon, lat);
-                            park.addPoint(p);
-                        }
-                        parks.add(park);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
-
-//    @GetMapping("/traffic/id/{id}")
-//    public int getTraficByPark(@PathVariable(value="id") int parkId) throws Exception {
-//        for (Park p : parks) {
-//                if (p.getId() == parkId) {
-//                    ObjectMapper objectMapper = new ObjectMapper();
-//                    objectMapper.registerModule(new JavaTimeModule());
-//                    try {
-//                        Path path = Paths.get("src", "main", "resources", "tracks.json");
-//                        File file = new File(path.toString());
-//                        ArrayList<Track> tracks = new ArrayList<>();
-//                        Track[] objetos = objectMapper.readValue(file, Track[].class);
-//                        for(Track t: objetos) {
-//                            tracks.add(t);
-//                        }
-//                        return crowdsensingService.getTraficByPark(p, tracks);
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//        }
-//        return -1;
-//    }
 
     @GetMapping("/markers")
     public ResponseEntity<String> getMarkers(@RequestParam("initialDate") LocalDate initialDate,
@@ -125,35 +120,18 @@ public class CrowdsensingController {
         Path path = Paths.get("src", "main", "resources", "response.json");
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
+
         com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(new File(path.toString()));
         JsonNode elementsArray = jsonNode.get("elements");
 
-        Path path2 = Paths.get("src", "main", "resources", "tracks.json");
-        File file = path2.toFile();
-        ArrayList<Track> tracks = new ArrayList<>();
-        Track[] objetos = objectMapper.readValue(file, Track[].class);
-        for(Track t: objetos) {
-            tracks.add(t);
-        }
-        return crowdsensingService.getMarkers(elementsArray, tracks, parks, initialDate, finalDate);
-    }
+        LocalDateTime initialDateTime = initialDate.atStartOfDay();
+        LocalDateTime finalDateTime = finalDate.atStartOfDay();
 
-@GetMapping("/markers")
-    public ResponseEntity<String> getMarkers(@RequestParam("initialDate") LocalDate initialDate,
-                                             @RequestParam("finalDate") LocalDate finalDate) throws IOException {
-        Path path = Paths.get("src", "main", "resources", "response.json");
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(new File(path.toString()));
-        JsonNode elementsArray = jsonNode.get("elements");
-
-        Path path2 = Paths.get("src", "main", "resources", "tracks.json");
-        File file = path2.toFile();
-        ArrayList<Track> tracks = new ArrayList<>();
-        Track[] objetos = objectMapper.readValue(file, Track[].class);
-        for(Track t: objetos) {
-            tracks.add(t);
-        }
-        return crowdsensingService.getMarkers(elementsArray, tracks, parks, initialDate, finalDate);
+        ZonedDateTime initial_zdt = initialDateTime.atZone(ZoneId.of("America/Argentina/Buenos_Aires"));
+        ZonedDateTime final_zdt = finalDateTime.atZone(ZoneId.of("America/Argentina/Buenos_Aires"));
+        long initial_ms = initial_zdt.toInstant().toEpochMilli();
+        long final_ms  = final_zdt.toInstant().toEpochMilli();
+        List<Visitas> visitas = viajeRepository.findByStartTimeBetween(initial_ms, final_ms);
+        return crowdsensingService.getMarkers(elementsArray, visitas, parks);
     }
 }

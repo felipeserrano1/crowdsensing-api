@@ -2,6 +2,7 @@ package com.example.apicrowdsensing.models;
 
 
 import java.time.LocalDate;
+import java.util.Date;
 
 public class DateTraffic {
 
@@ -30,5 +31,14 @@ public class DateTraffic {
 
     public void addTraffic() {
         this.traffic++;
+    }
+
+
+    @Override
+    public String toString() {
+        return "DateTraffic{" +
+                "date=" + date +
+                ", traffic=" + traffic +
+                '}';
     }
 }
