@@ -1,8 +1,6 @@
 package com.example.apicrowdsensing.models;
 
-
 import java.time.LocalDate;
-import java.util.Date;
 
 public class DateTraffic {
 

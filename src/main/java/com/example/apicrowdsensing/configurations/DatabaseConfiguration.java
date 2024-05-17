@@ -9,7 +9,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 @Configuration
-public class DatabaseConfig {
+public class DatabaseConfiguration {
 
     @Bean
     public DataSource dataSource() {

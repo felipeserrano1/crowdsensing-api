@@ -19,6 +19,8 @@ public class CrowdsensingService {
     @Autowired
     public CrowdsensingService() {}
 
+
+
     public ArrayList<DateTraffic> getTraficByPark(Park park, List<Visitas> visitas) {
         ArrayList<DateTraffic> l = new ArrayList<>();
         for(Visitas v: visitas) {
@@ -44,14 +46,16 @@ public class CrowdsensingService {
         return l;
     }
 
-    public static boolean pointInsidePoligon(Point point, ArrayList<Point> poligon) {
+    public static boolean pointInsidePoligon(Point point, List<String> poligon) {
         int intersections = 0;
         int n = poligon.size();
         double x = point.getX();
         double y = point.getY();
         for (int i = 0; i < n; i++) {
-            Point p1 = poligon.get(i);
-            Point p2 = poligon.get((i + 1) % n);
+            String[] partes1 = poligon.get(i).split("; ");
+            Point p1 = new Point(Double.parseDouble(partes1[0]), Double.parseDouble(partes1[1]));
+            String[] partes2 = poligon.get((i + 1) % n).split("; ");
+            Point p2 = new Point(Double.parseDouble(partes2[0]), Double.parseDouble(partes2[1]));
             if ((p1.getY() <= y && y < p2.getY() || p2.getY() <= y && y < p1.getY())
                     && x < (p2.getX() - p1.getX()) * (y - p1.getY()) / (p2.getY() - p1.getY()) + p1.getX()) {
                 intersections++;
@@ -60,7 +64,7 @@ public class CrowdsensingService {
         return intersections % 2 == 1;
     }
 
-    public ResponseEntity<String> getMarkers(JsonNode elementsArray, List<Visitas> visitas, ArrayList<Park> parks) throws JsonProcessingException {
+    public ResponseEntity<String> getMarkers(JsonNode elementsArray, List<Visitas> visitas, List<Park> parks) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         mapper.findAndRegisterModules();
         while(parks.isEmpty()) {
@@ -90,9 +94,10 @@ public class CrowdsensingService {
                     lon = element.get("lon").asDouble();
                 }
                 for(Park p: parks) {
-                    String name = null;
-                    if (p.getId() == id) {
-                        name = p.getName();
+                    //String name = null;
+                    String name = p.getName();
+                    if (Math.toIntExact(p.getId()) == id && name != null) {
+                        //name = p.getName();
                         ArrayList<DateTraffic> traffic = getTraficByPark(p, visitas);
                         result.add(new NewFormatMarker(new double[]{lat, lon}, name, traffic));
                         break;
