@@ -14,7 +14,6 @@ public class Track {
     private Point point;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate date;
-    //private ArrayList<Point> path;
 
     public Track() {
     }

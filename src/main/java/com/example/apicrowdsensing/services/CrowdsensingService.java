@@ -1,6 +1,7 @@
 package com.example.apicrowdsensing.services;
 
 import com.example.apicrowdsensing.models.*;
+import com.example.apicrowdsensing.repositories.ParkRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,8 +19,6 @@ public class CrowdsensingService {
 
     @Autowired
     public CrowdsensingService() {}
-
-
 
     public ArrayList<DateTraffic> getTraficByPark(Park park, List<Visitas> visitas) {
         ArrayList<DateTraffic> l = new ArrayList<>();
@@ -64,7 +63,7 @@ public class CrowdsensingService {
         return intersections % 2 == 1;
     }
 
-    public ResponseEntity<String> getMarkers(JsonNode elementsArray, List<Visitas> visitas, List<Park> parks) throws JsonProcessingException {
+    public ResponseEntity<String> getMarkers(JsonNode elementsArray, List<Visitas> visitas, List<Park> parks, List<Park> parksCreated) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         mapper.findAndRegisterModules();
         while(parks.isEmpty()) {
@@ -94,15 +93,30 @@ public class CrowdsensingService {
                     lon = element.get("lon").asDouble();
                 }
                 for(Park p: parks) {
-                    //String name = null;
                     String name = p.getName();
                     if (Math.toIntExact(p.getId()) == id && name != null) {
-                        //name = p.getName();
                         ArrayList<DateTraffic> traffic = getTraficByPark(p, visitas);
                         result.add(new NewFormatMarker(new double[]{lat, lon}, name, traffic));
                         break;
                     }
                 }
+            }
+            for(Park p: parksCreated) {
+                lat = 0;
+                lon = 0;
+                for (String punto : p.getPoints()) {
+                    String[] partes = punto.split("; ");
+                    double x = Double.parseDouble(partes[0]);
+                    double y = Double.parseDouble(partes[1]);
+                    lat += x;
+                    lon += y;
+                }
+                int length = p.getPoints().size();
+                lat /= length;
+                lon /= length;
+                String name = p.getName();
+                ArrayList<DateTraffic> traffic = getTraficByPark(p, visitas);
+                result.add(new NewFormatMarker(new double[]{lat, lon}, name, traffic));
             }
         }
         String json = mapper.writeValueAsString(result);

@@ -23,9 +23,7 @@ public class DatabaseConfiguration {
             System.out.println("Connected to the database");
         } catch (SQLException e) {
             System.err.println("Failed to connect to the database: " + e.getMessage());
-            // Aquí puedes lanzar una excepción personalizada o realizar otra acción
         }
-
         return dataSource;
     }
 }

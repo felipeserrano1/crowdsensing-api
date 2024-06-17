@@ -9,16 +9,25 @@ import java.util.List;
 //@Table(name = "parques")
 public class Park {
     @Id
-    //@GeneratedValue
     private long id;
 
-    private String name, city;
+    private String name, city, type;
 
     @ElementCollection
-    //@CollectionTable(name = "park_points", joinColumns = @JoinColumn(name = "id"))
     private List<String> points = new ArrayList<>();
 
     private boolean deleted = false;
+
+    private boolean created = false;
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
     public long getId() {
         return id;
     }
@@ -62,30 +71,13 @@ public class Park {
         this.points = points;
     }
 
-    //
-//
-//    public Park(int id) {
-//        this.id = id;
-//        this.points = new ArrayList<>();
-//    }
-//
-//    public Park() {
-//
-//    }
-//
-////    public ArrayList<Point> getPoints() {
-////        return points;
-////    }
-////
-////    public int getId() {
-////        return id;
-////    }
-////
-////    public void addPoint(Point p) {
-////        this.points.add(p);
-////    }
-//
+    public boolean isCreated() {
+        return created;
+    }
 
+    public void setCreated(boolean created) {
+        this.created = created;
+    }
 
     @Override
     public String toString() {
@@ -95,23 +87,7 @@ public class Park {
                 ", city='" + city + '\'' +
                 ", points=" + points +
                 ", deleted=" + deleted +
+                ", type=" + type +
                 '}';
     }
-//
-//    public void setName(String name) {
-//        this.name = name;
-//    }
-//
-//    public String getName() {
-//        return name;
-//    }
-//
-//    @Override
-//    public boolean equals(Object o) {
-//        if (this == o) return true;
-//        if (o == null || getClass() != o.getClass()) return false;
-//        Park park = (Park) o;
-//        return id == park.id;
-//    }
-
 }

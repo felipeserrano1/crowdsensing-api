@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class NewFormatMarker {
     private double[] geocode;
@@ -51,5 +52,12 @@ public class NewFormatMarker {
         this.name = name;
     }
 
-
+    @Override
+    public String toString() {
+        return "NewFormatMarker{" +
+                "geocode=" + Arrays.toString(geocode) +
+                ", name='" + name + '\'' +
+                ", traffic=" + traffic +
+                '}';
+    }
 }
