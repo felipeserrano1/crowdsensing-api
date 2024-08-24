@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.net.URLEncoder;
@@ -106,14 +107,6 @@ public class CrowdsensingController {
     }
     @GetMapping("/query/city")
     public void getQuery(@RequestParam("city") String city, @RequestParam("tag") String tag) throws Exception {
-//        List<Park> parksByCity= parkRepository.findAllByCityAndDeletedIsFalseAndTypeAndCreatedIsFalse(city, tag);
-//        System.out.println("query list");
-//        System.out.println(parksByCity);
-//        if(!parksByCity.isEmpty()) {
-//            this.parks = parksByCity;
-//            this.city = city;
-//        }
-//        else {
             this.city = city;
             this.parks.clear();
             double minlat = 0;
@@ -173,17 +166,6 @@ public class CrowdsensingController {
                 } else if (waterwayTags.contains(tag)) {
                     tagType = "waterway";
                 }
-
-
-//                HttpResponse<String> response = Unirest.post("https://overpass-api.de/api/interpreter")
-//                        .header("Content-Type", "text/plain")
-//                        .body("[out:json][timeout:25][maxsize:800000000];\n" +
-//                                "area(id:3604438708)->.searchArea;\n" +
-//                                "nwr[\"" + tagType + "\"=\"" + tag + "\"](area.searchArea);\n" +
-//                                "out geom;")
-//                        .asString();
-
-
                 HttpResponse<String> response = Unirest.post("https://overpass-api.de/api/interpreter")
                         .header("Content-Type", "text/plain")
                         .body("[out:json][timeout:25][maxsize:800000000];\n" +
@@ -272,14 +254,14 @@ public class CrowdsensingController {
         return crowdsensingService.getMarkers(elementsArray, visitas, parksByCity, parksCreated);
     }
 
-    @GetMapping("/delete/park")
+    @DeleteMapping("/delete/park")
     public void deletePark(@RequestParam("name") String name) {
         Park park = parkRepository.findByName(name);
         park.setDeleted(true);
         parkRepository.save(park);
     }
 
-    @GetMapping("/update/park")
+    @PutMapping("/update/park")
     public void updateParkName(@RequestParam("name") String name, @RequestParam("newName") String newName) {
         Park park = parkRepository.findByName(name);
         park.setName(newName);
@@ -309,5 +291,22 @@ public class CrowdsensingController {
         newPark.setPoints(points);
         newPark.setCreated(true);
         parkRepository.save(newPark);
+    }
+
+    @GetMapping("/parks")
+    public List<Park> getParks() {
+        return parkRepository.findAll();
+    }
+
+    @GetMapping("/visitas")
+    public List<Visitas> getVisitas() {
+        return viajeRepository.findAll();
+    }
+
+
+    @PostMapping("/upload")
+    public String uploadCsv(@RequestParam("file") MultipartFile file) {
+        String response = crowdsensingService.uploadCsv(file);
+        return response;
     }
 }

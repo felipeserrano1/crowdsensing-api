@@ -2,23 +2,32 @@ package com.example.apicrowdsensing.services;
 
 import com.example.apicrowdsensing.models.*;
 import com.example.apicrowdsensing.repositories.ParkRepository;
+import com.example.apicrowdsensing.repositories.ViajeRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.time.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
 @Service
 public class CrowdsensingService {
+    private final ViajeRepository viajeRepository;
 
     @Autowired
-    public CrowdsensingService() {}
+    public CrowdsensingService(ViajeRepository viajeRepository) {
+        this.viajeRepository = viajeRepository;
+    }
+
 
     public ArrayList<DateTraffic> getTraficByPark(Park park, List<Visitas> visitas) {
         ArrayList<DateTraffic> l = new ArrayList<>();
@@ -123,6 +132,48 @@ public class CrowdsensingService {
         return ResponseEntity.ok()
                 .header("Content-Type", "application/json")
                 .body(json);
+    }
+
+    public String uploadCsv(MultipartFile file) {
+        if (file.isEmpty()) {
+            return "El archivo está vacío";
+        }
+
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+            String line;
+            int numlinea = 0;
+            List<Visitas> visitasList = new ArrayList<>();
+            List<String> a = new ArrayList<>();
+
+            while ((line = br.readLine()) != null) {
+                String[] values = line.split(",");
+                Visitas v = new Visitas();
+                double doubleValue;
+                long longValue;
+
+                if((numlinea > 0) && (values.length != 0)) {
+                    v.setId(Integer.parseInt(values[0]));
+                    v.setUser_id(Integer.parseInt(values[1]));
+                    String firstCoordinate =  values[2].substring(1).trim();
+                    String secondCoordinate = values[3].substring(0, values[3].length() - 1);
+                    String coordinate = firstCoordinate + "," + secondCoordinate;
+                    v.setCenter(coordinate);
+                    doubleValue = Double.parseDouble(values[4]);
+                    longValue = (long) doubleValue;
+                    v.setStartTime(longValue);
+                    doubleValue = Double.parseDouble(values[5]);
+                    longValue = (long) doubleValue;
+                    v.setEnd_time(longValue);
+                    visitasList.add(v);
+                }
+                numlinea++;
+            }
+            viajeRepository.saveAll(visitasList);
+            return "Archivo procesado y datos guardados en la base de datos.";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error al procesar el archivo: " + e.getMessage();
+        }
     }
 
 }

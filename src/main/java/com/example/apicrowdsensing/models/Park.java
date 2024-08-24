@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-//@Table(name = "parques")
 public class Park {
     @Id
     private long id;
