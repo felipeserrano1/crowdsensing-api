@@ -33,3 +33,9 @@ build/
 .vscode/
 
 src/main/resources/response.json
+#src/main/resources/application.properties
+
+#docker-compose.yml
+
+#Dockerfile
+

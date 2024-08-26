@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "park")
 public class Park {
     @Id
     private long id;
@@ -77,6 +78,9 @@ public class Park {
     public void setCreated(boolean created) {
         this.created = created;
     }
+
+
+
 
     @Override
     public String toString() {
