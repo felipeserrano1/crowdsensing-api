@@ -33,4 +33,8 @@ public class LocationRequest {
     public List<List<String>> getPositions() {
         return positions;
     }
+
+    public void setPositions(List<List<String>> positions) {
+        this.positions = positions;
+    }
 }

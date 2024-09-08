@@ -79,9 +79,6 @@ public class Park {
         this.created = created;
     }
 
-
-
-
     @Override
     public String toString() {
         return "Park{" +
@@ -91,6 +88,7 @@ public class Park {
                 ", points=" + points +
                 ", deleted=" + deleted +
                 ", type=" + type +
+                ", created=" + created +
                 '}';
     }
 }

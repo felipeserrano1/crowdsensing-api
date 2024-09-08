@@ -26,28 +26,6 @@ public class CrowdsensingController {
         this.crowdsensingService = crowdsensingService;
     }
 
-    @GetMapping("/query/city")
-    public BaseResponse getQuery(@RequestParam("city") String city, @RequestParam("tag") String tag) throws Exception {
-        String response;
-        try {
-            response = crowdsensingService.getQuery(city, tag);
-        } catch (Exception e) {
-            return new BaseResponse(null, new ErrorResponse(e.getMessage()));
-        }
-        return new BaseResponse(response, null);
-    }
-
-    @GetMapping("/markers")
-    public ResponseEntity<String> getMarkers(@RequestParam("initialDate") LocalDate initialDate, @RequestParam("finalDate") LocalDate finalDate, @RequestParam("tag") String tag) throws IOException {
-        ResponseEntity<String> response;
-        try {
-            response = crowdsensingService.getMarkers(initialDate, finalDate, tag);
-        } catch (IOException e) {
-            return ResponseEntity.ofNullable(e.getMessage());
-        }
-        return response;
-    }
-
     @GetMapping("/parks")
     public BaseResponse getParks() {
         List<Park> parkList = null;
@@ -70,6 +48,28 @@ public class CrowdsensingController {
         return new BaseResponse(visitasList, null);
     }
 
+    @GetMapping("/query/city")
+    public BaseResponse getQuery(@RequestParam("city") String city, @RequestParam("tag") String tag) throws Exception {
+        String response;
+        try {
+            response = crowdsensingService.getQuery(city, tag);
+        } catch (Exception e) {
+            return new BaseResponse(null, new ErrorResponse(e.getMessage()));
+        }
+        return new BaseResponse(response, null);
+    }
+
+    @GetMapping("/markers")
+    public ResponseEntity<String> getMarkers(@RequestParam("initialDate") LocalDate initialDate, @RequestParam("finalDate") LocalDate finalDate, @RequestParam("tag") String tag) throws IOException {
+        ResponseEntity<String> response;
+        try {
+            response = crowdsensingService.getMarkers(initialDate, finalDate, tag);
+        } catch (IOException e) {
+            return ResponseEntity.ofNullable(e.getMessage());
+        }
+        return response;
+    }
+
     @DeleteMapping("/delete/park")
     public BaseResponse deletePark(@RequestParam("name") String name) {
         String response;
@@ -86,8 +86,10 @@ public class CrowdsensingController {
         String response;
         try {
             response = crowdsensingService.updateParkName(name, newName);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return new BaseResponse(null, new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            return new BaseResponse(null, new ErrorResponse("An unexpected error occurred: " + e.getMessage()));
         }
         return new BaseResponse(response, null);
     }
