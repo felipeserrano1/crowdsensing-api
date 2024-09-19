@@ -2,10 +2,14 @@ package com.example.apicrowdsensing.controllers;
 
 import com.example.apicrowdsensing.models.*;
 import com.example.apicrowdsensing.services.CrowdsensingService;
-import com.example.apicrowdsensing.views.BaseResponse;
-import com.example.apicrowdsensing.views.ErrorResponse;
+import com.example.apicrowdsensing.services.OverpassService;
+import com.example.apicrowdsensing.utils.CustomException;
+import com.example.apicrowdsensing.views.responses.BaseResponse;
+import com.example.apicrowdsensing.views.responses.ErrorResponse;
 
+import com.mashape.unirest.http.exceptions.UnirestException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,105 +18,118 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
 import java.time.LocalDate;
 
-import java.util.ArrayList;
 import java.util.List;
+
 
 @RestController
 public class CrowdsensingController {
-    private CrowdsensingService crowdsensingService;
+    private final CrowdsensingService crowdsensingService;
+    private final OverpassService overpassService;
 
     @Autowired
-    public CrowdsensingController(CrowdsensingService crowdsensingService) {
+    public CrowdsensingController(CrowdsensingService crowdsensingService, OverpassService overpassService) {
         this.crowdsensingService = crowdsensingService;
+        this.overpassService = overpassService;
     }
 
-    @GetMapping("/parks")
-    public BaseResponse getParks() {
-        List<Park> parkList = null;
+    @GetMapping("/publicspaces")
+    public ResponseEntity<BaseResponse> getPublicSpaces() {
+        List<PublicSpace> publicSpaceList;
         try {
-            parkList = crowdsensingService.getParks();
-        } catch (Exception e) {
-            return new BaseResponse(null, new ErrorResponse(e.getMessage()));
+            publicSpaceList = crowdsensingService.getPublicSpaces();
+        } catch (RuntimeException | CustomException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new BaseResponse(null, new ErrorResponse(e)));
         }
-        return new BaseResponse(parkList, null);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new BaseResponse(publicSpaceList, null));
     }
 
-    @GetMapping("/visitas")
-    public BaseResponse getVisitas() {
-        var visitasList = new ArrayList<Visitas>();
+    @GetMapping("/visits")
+    public ResponseEntity<BaseResponse> getVisits() {
+        List<Visit> visitasList;
         try {
-            visitasList = crowdsensingService.getVisitas();
-        } catch (Exception e) {
-            return new BaseResponse(null, new ErrorResponse(e.getMessage()));
+            visitasList = crowdsensingService.getVisits();
+        } catch (RuntimeException | CustomException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new BaseResponse(null, new ErrorResponse(e)));
         }
-        return new BaseResponse(visitasList, null);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new BaseResponse(visitasList, null));
     }
 
-    @GetMapping("/query/city")
-    public BaseResponse getQuery(@RequestParam("city") String city, @RequestParam("tag") String tag) throws Exception {
-        String response;
+    @GetMapping("/query/overpass")
+    public ResponseEntity<BaseResponse> getOverpassQuery(@RequestParam("city") String city, @RequestParam("tag") String tag) {
         try {
-            response = crowdsensingService.getQuery(city, tag);
-        } catch (Exception e) {
-            return new BaseResponse(null, new ErrorResponse(e.getMessage()));
+            overpassService.getOverpassQuery(city, tag);
+        } catch (CustomException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new BaseResponse(null, new ErrorResponse(e)));
+        } catch (UnirestException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new BaseResponse(null, new ErrorResponse(e)));
         }
-        return new BaseResponse(response, null);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new BaseResponse("Overpass queried!", null));
     }
 
     @GetMapping("/markers")
-    public ResponseEntity<String> getMarkers(@RequestParam("initialDate") LocalDate initialDate, @RequestParam("finalDate") LocalDate finalDate, @RequestParam("tag") String tag) throws IOException {
+    public ResponseEntity<String> getMarkers(@RequestParam("initialDate") LocalDate initialDate, @RequestParam("finalDate") LocalDate finalDate, @RequestParam("tag") String tag, @RequestParam("city") String city) throws IOException {
         ResponseEntity<String> response;
         try {
-            response = crowdsensingService.getMarkers(initialDate, finalDate, tag);
-        } catch (IOException e) {
-            return ResponseEntity.ofNullable(e.getMessage());
+            response = crowdsensingService.getMarkers(initialDate, finalDate, tag, city);
+        } catch (CustomException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
         return response;
     }
 
-    @DeleteMapping("/delete/park")
-    public BaseResponse deletePark(@RequestParam("name") String name) {
-        String response;
+    @PutMapping("/delete/publicspace/{id}")
+    public ResponseEntity<BaseResponse> softDeletePublicSpace(@PathVariable long id) {
         try {
-            response = crowdsensingService.deletePark(name);
-        } catch (Exception e) {
-            return new BaseResponse(null, new ErrorResponse(e.getMessage()));
+            crowdsensingService.softDeletePublicSpace(id);
+        } catch (CustomException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new BaseResponse(null, new ErrorResponse(e)));
         }
-        return new BaseResponse(response, null);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new BaseResponse("Public space deleted successfully", null));
     }
 
-    @PutMapping("/update/park")
-    public BaseResponse updateParkName(@RequestParam("name") String name, @RequestParam("newName") String newName) {
-        String response;
+    @PutMapping("/publicspaces/name/{id}")
+    public ResponseEntity<BaseResponse> updatePublicSpaceName(@PathVariable(value="id") long id, @RequestParam("newName") String newName) {
         try {
-            response = crowdsensingService.updateParkName(name, newName);
-        } catch (RuntimeException e) {
-            return new BaseResponse(null, new ErrorResponse(e.getMessage()));
-        } catch (Exception e) {
-            return new BaseResponse(null, new ErrorResponse("An unexpected error occurred: " + e.getMessage()));
+            crowdsensingService.updatePublicSpaceName(id, newName);
+        } catch (CustomException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new BaseResponse(null, new ErrorResponse(e)));
         }
-        return new BaseResponse(response, null);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new BaseResponse("Public space's name updated", null));
     }
 
     @PostMapping("/create/location")
-    public BaseResponse createLocation(@RequestBody LocationRequest locationRequest) {
-        String response;
+    public ResponseEntity<BaseResponse> createLocation(@RequestBody LocationRequest locationRequest) {
         try {
-            response = crowdsensingService.createLocation(locationRequest);
-        } catch (Exception e) {
-            return new BaseResponse(null, new ErrorResponse(e.getMessage()));
+            crowdsensingService.createLocation(locationRequest);
+        } catch (CustomException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new BaseResponse(null, new ErrorResponse(e)));
         }
-        return new BaseResponse(response, null);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new BaseResponse("New location created",null));
     }
 
     @PostMapping("/upload")
-    public BaseResponse uploadCsv(@RequestParam("file") MultipartFile file) {
-        String response;
+    public ResponseEntity<BaseResponse> uploadCsv(@RequestParam("file") MultipartFile file) {
         try {
-            response = crowdsensingService.uploadCsv(file);
-        } catch (Exception e) {
-            return new BaseResponse(null, new ErrorResponse(e.getMessage()));
+            crowdsensingService.uploadCsv(file);
+        } catch (CustomException | IOException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new BaseResponse(null, new ErrorResponse(e)));
         }
-        return new BaseResponse(response, null);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new BaseResponse("File was uploaded to the database",null));
     }
 }

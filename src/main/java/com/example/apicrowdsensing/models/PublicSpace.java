@@ -1,20 +1,26 @@
 package com.example.apicrowdsensing.models;
 
 import jakarta.persistence.*;
+import jdk.jfr.Name;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "park")
-public class Park {
+@Table(name = "public_spaces")
+public class PublicSpace {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     private String name, city, type;
 
+    @Name("overpass_id")
+    private long overpassId;
+
     @ElementCollection
     private List<String> points = new ArrayList<>();
+
 
     private boolean deleted = false;
 
@@ -79,9 +85,17 @@ public class Park {
         this.created = created;
     }
 
+    public long getOverpassId() {
+        return overpassId;
+    }
+
+    public void setOverpassId(long overpassId) {
+        this.overpassId = overpassId;
+    }
+
     @Override
     public String toString() {
-        return "Park{" +
+        return "PublicSpace{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", city='" + city + '\'' +

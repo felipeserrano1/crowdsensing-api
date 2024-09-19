@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class NewFormatMarker {
+    private long id;
     private double[] geocode;
     private String name;
     private ArrayList<DateTraffic> traffic;
@@ -14,9 +15,10 @@ public class NewFormatMarker {
     public NewFormatMarker() {
     }
 
-    public NewFormatMarker(double[] geocode, String name, ArrayList<DateTraffic> traffic) {
+    public NewFormatMarker(long id, double[] geocode, String name, ArrayList<DateTraffic> traffic) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
+        this.id = id;
         this.geocode = geocode;
         this.name = name;
         this.traffic = traffic;
@@ -52,10 +54,19 @@ public class NewFormatMarker {
         this.name = name;
     }
 
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
     @Override
     public String toString() {
         return "NewFormatMarker{" +
-                "geocode=" + Arrays.toString(geocode) +
+                "id=" + id +
+                ", geocode=" + Arrays.toString(geocode) +
                 ", name='" + name + '\'' +
                 ", traffic=" + traffic +
                 '}';

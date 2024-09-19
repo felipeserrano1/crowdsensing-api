@@ -23,13 +23,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-<!--            <scope>test</scope>-->
-<!--            <exclusions>-->
-<!--                <exclusion>-->
-<!--                    <groupId>com.vaadin.external.google</groupId>-->
-<!--                    <artifactId>android-json</artifactId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -44,7 +37,8 @@
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>4.5.13</version> <!-- La versión puede variar, verifica la última versión en el repositorio de Maven -->
+            <version>4.5.13
+            </version> <!-- La versión puede variar, verifica la última versión en el repositorio de Maven -->
         </dependency>
         <dependency>
             <groupId>com.mashape.unirest</groupId>
@@ -82,6 +76,13 @@
             <artifactId>mockserver-client-java</artifactId>
             <version>5.13.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock-jre8-standalone</artifactId>
+            <version>2.35.0</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 

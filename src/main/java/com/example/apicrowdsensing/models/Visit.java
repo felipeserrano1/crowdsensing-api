@@ -5,7 +5,8 @@ import jakarta.persistence.*;
 import java.util.Date;
 
 @Entity
-public class Visitas {
+@Table(name = "visits")
+public class Visit {
     @Id
     private int id;
 
@@ -22,14 +23,14 @@ public class Visitas {
     private long end_time;
 
 
-    public Visitas(Integer user_id, String center, long startTime, long end_time) {
+    public Visit(Integer user_id, String center, long startTime, long end_time) {
         this.user_id = user_id;
         this.center = center;
         this.startTime = startTime;
         this.end_time = end_time;
     }
 
-    public Visitas() {}
+    public Visit() {}
 
     public int getUser_id() {
         return user_id;
@@ -73,7 +74,7 @@ public class Visitas {
 
     @Override
     public String toString() {
-        return "Visitas{" +
+        return "Visit{" +
                 "user_id=" + user_id +
                 ", center='" + center + '\'' +
                 ", start_time=" + startTime +
