@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
-public class CrowdsensingControllerTest {
+public class CrowdsensingControllerIT {
 
     @Autowired
     private MockMvc mockMvc;
@@ -296,7 +296,7 @@ public class CrowdsensingControllerTest {
         publicSpaceRepository.save(ps);
         publicSpaceRepository.save(ps2);
 
-        MvcResult result = mockMvc.perform(put("/publicspaces/name/{id}", 4)
+        MvcResult result = mockMvc.perform(put("/publicspaces/name/{id}", 3)
                         .param("newName", "New Name")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -310,7 +310,7 @@ public class CrowdsensingControllerTest {
         assertThat(baseResponse.getErrorResponse()).isNotNull();
         assertThat(baseResponse.getPayloadAsString(payload)).isEqualTo("Public space's name updated");
 
-        PublicSpace updatedPublicSpace = publicSpaceRepository.findById(4L);
+        PublicSpace updatedPublicSpace = publicSpaceRepository.findById(3L);
         assertThat(updatedPublicSpace).isNotNull();
         assertThat(updatedPublicSpace.getName()).isEqualTo("New Name");
     }

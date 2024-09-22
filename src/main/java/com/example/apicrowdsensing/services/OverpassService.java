@@ -54,7 +54,7 @@ public class OverpassService {
                 throw new CustomException("City or limits not found", HttpStatus.BAD_REQUEST);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         }
 
         String tagType = utils.getTag(tag);
@@ -79,7 +79,7 @@ public class OverpassService {
             JsonNode jsonNode = objectMapper.readTree(requestOverpass.getBody());
             this.response = jsonNode.get("elements");
         } catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         }
 
         savePublicSpaces(response, tag, minlat, maxlat, minlon, maxlon, city);

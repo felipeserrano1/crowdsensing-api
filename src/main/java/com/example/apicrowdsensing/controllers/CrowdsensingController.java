@@ -79,7 +79,7 @@ public class CrowdsensingController {
         try {
             response = crowdsensingService.getMarkers(initialDate, finalDate, tag, city);
         } catch (CustomException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
         return response;
