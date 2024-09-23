@@ -104,14 +104,12 @@ public class CrowdsensingService {
             String line;
             int numlinea = 0;
             List<Visit> visitList = new ArrayList<>();
-
             while ((line = br.readLine()) != null) {
                 String[] values = line.split(",");
 
                 if (numlinea > 0 && values.length < 6) {
                     throw new CustomException("Malformed CSV: Insufficient columns on line " + numlinea, HttpStatus.BAD_REQUEST);
                 }
-
                 Visit v = new Visit();
                 double doubleValue;
                 long longValue;

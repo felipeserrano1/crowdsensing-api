@@ -1,0 +1,9 @@
+CREATE TABLE public_spaces (
+   id BIGINT AUTO_INCREMENT PRIMARY KEY,
+   city VARCHAR(255) NULL,
+   created BIT(1) NOT NULL,
+   deleted BIT(1) NOT NULL,
+   name VARCHAR(255) NULL,
+   overpass_id BIGINT NOT NULL,
+   type VARCHAR(255) NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
