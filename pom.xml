@@ -134,9 +134,9 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>10.0.0</version>
                 <configuration>
-                    <url>${db.url}</url>
-                    <user>${db.username}</user>
-                    <password>${db.password}</password>
+                    <url>${DB_URL}</url>
+                    <user>${DB_USERNAME}</user>
+                    <password>${DB_PASSWORD}</password>
                     <locations>
                         <location>classpath:db/migration</location>
                     </locations>
