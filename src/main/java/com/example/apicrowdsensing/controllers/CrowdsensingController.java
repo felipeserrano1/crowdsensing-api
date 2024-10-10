@@ -58,6 +58,19 @@ public class CrowdsensingController {
                 .body(new BaseResponse(visitasList, null));
     }
 
+    @GetMapping("/publicspaces/created")
+    public ResponseEntity<BaseResponse> getPublicSpacesCreated() {
+        List<PublicSpace> createdPS;
+        try {
+            createdPS = crowdsensingService.getPublicSpacesCreated();
+        } catch (RuntimeException | CustomException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new BaseResponse(null, new ErrorResponse(e)));
+        }
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new BaseResponse(createdPS, null));
+    }
+
     @GetMapping("/query/overpass")
     public ResponseEntity<BaseResponse> getOverpassQuery(@RequestParam("city") String city, @RequestParam("tag") String tag) {
         try {

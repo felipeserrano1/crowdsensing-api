@@ -13,4 +13,5 @@ public interface PublicSpaceRepository extends JpaRepository<PublicSpace, Long> 
     PublicSpace findById(long id);
     PublicSpace findByOverpassId(Long overpassId);
     List<PublicSpace> findAllByCityAndDeletedIsFalseAndType(String city, String type);
+    List<PublicSpace> findAllByCreatedTrue();
 }

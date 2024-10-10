@@ -96,6 +96,15 @@ public class CrowdsensingService {
         return publicSpaces;
     }
 
+    public List<PublicSpace> getPublicSpacesCreated() throws CustomException {
+        List<PublicSpace> publicSpaces;
+        publicSpaces = publicSpaceRepository.findAllByCreatedTrue();
+        if(publicSpaces.isEmpty()) {
+            throw new CustomException("No public spaces created available", HttpStatus.BAD_REQUEST);
+        }
+        return publicSpaces;
+    }
+
     public void uploadCsv(MultipartFile file) throws CustomException, IOException {
         if (file.isEmpty()) {
             throw new CustomException("File is empty", HttpStatus.BAD_REQUEST);
