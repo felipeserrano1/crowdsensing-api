@@ -145,4 +145,14 @@ public class CrowdsensingController {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new BaseResponse("File was uploaded to the database",null));
     }
+
+    @GetMapping("/publicspaces/{id}")
+    public ResponseEntity<BaseResponse> findPublicSpace(@PathVariable long id) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(new BaseResponse(crowdsensingService.findPublicSpace(id), null));
+        } catch (CustomException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new BaseResponse(null, new ErrorResponse(e)));
+        }
+    }
 }
+

@@ -217,4 +217,12 @@ public class CrowdsensingService {
                 .header("Content-Type", "application/json")
                 .body(json);
     }
+
+    public PublicSpace findPublicSpace(long id) throws CustomException {
+        var publicSpace = publicSpaceRepository.findById(id);
+        if (publicSpace == null) {
+            throw new CustomException("PublicSpace not found", HttpStatus.BAD_REQUEST);
+        }
+        return publicSpace;
+    }
 }
