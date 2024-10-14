@@ -40,81 +40,47 @@ jobs:
       - name: Install SSH Client
         run: sudo apt-get install -y openssh-client
 
-      # Step to fetch public IPs based on EC2 tags
-      - name: Fetch EC2 Public IPs based on Tags
+      # Step to fetch public IPs for all instances with the tag 'springboot-api'
+      - name: Fetch EC2 Public IPs based on Tag "springboot-api"
         id: fetch_ips
         run: |
-          EC2_INSTANCE_ID_1=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=springboot-api-1" --query "Reservations[].Instances[].InstanceId" --output text)
-          EC2_INSTANCE_ID_2=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=springboot-api-2" --query "Reservations[].Instances[].InstanceId" --output text)
-          EC2_INSTANCE_ID_3=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=springboot-api-3" --query "Reservations[].Instances[].InstanceId" --output text)
+          # Get all instance IDs with the tag "springboot-api"
+          INSTANCE_IDS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=springboot-api" \
+            --query "Reservations[].Instances[].InstanceId" --output text)
 
-          # Start the instances if they are stopped
-          aws ec2 start-instances --instance-ids $EC2_INSTANCE_ID_1 $EC2_INSTANCE_ID_2 $EC2_INSTANCE_ID_3 --region ${{ secrets.AWS_REGION }}
-          aws ec2 wait instance-running --instance-ids $EC2_INSTANCE_ID_1 $EC2_INSTANCE_ID_2 $EC2_INSTANCE_ID_3 --region ${{ secrets.AWS_REGION }}
+          # Start all instances that are stopped
+          aws ec2 start-instances --instance-ids $INSTANCE_IDS --region ${{ secrets.AWS_REGION }}
 
-          # Fetch the public IPs
-          EC2_PUBLIC_IP_1=$(aws ec2 describe-instances --instance-ids $EC2_INSTANCE_ID_1 --query "Reservations[].Instances[].PublicIpAddress" --output text)
-          EC2_PUBLIC_IP_2=$(aws ec2 describe-instances --instance-ids $EC2_INSTANCE_ID_2 --query "Reservations[].Instances[].PublicIpAddress" --output text)
-          EC2_PUBLIC_IP_3=$(aws ec2 describe-instances --instance-ids $EC2_INSTANCE_ID_3 --query "Reservations[].Instances[].PublicIpAddress" --output text)
+          # Wait for the instances to be in running state
+          aws ec2 wait instance-running --instance-ids $INSTANCE_IDS --region ${{ secrets.AWS_REGION }}
 
-          # Export them as GitHub Actions environment variables
-          echo "EC2_PUBLIC_IP_1=$EC2_PUBLIC_IP_1" >> $GITHUB_ENV
-          echo "EC2_PUBLIC_IP_2=$EC2_PUBLIC_IP_2" >> $GITHUB_ENV
-          echo "EC2_PUBLIC_IP_3=$EC2_PUBLIC_IP_3" >> $GITHUB_ENV
+          # Fetch the public IPs for all running instances
+          PUBLIC_IPS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=springboot-api" \
+            --query "Reservations[].Instances[].PublicIpAddress" --output text)
 
-      # SSH and deploy to the first EC2 instance
-      - name: SSH into EC2 instance 1 and run commands
+          # Save public IPs to the GitHub Actions environment variable
+          echo "PUBLIC_IPS=$PUBLIC_IPS" >> $GITHUB_ENV
+
+      # Loop through the fetched public IPs and run SSH commands on each
+      - name: SSH into each EC2 instance and run commands
         env:
           PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+          PUBLIC_IPS: ${{ env.PUBLIC_IPS }}
         run: |
-          echo "$PRIVATE_KEY" > private_key.pem
-          chmod 600 private_key.pem
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$EC2_PUBLIC_IP_1 << 'EOF'
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:latest
-            docker stop springboot-api-container || true
-            docker rm springboot-api-container || true
-            docker run -d --rm --name springboot-api-container -p 8080:8080 \
-              -e DB_URL="${{ secrets.DB_URL }}" \
-              -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
-              -e DB_USERNAME="${{ secrets.DB_USERNAME }}" \
-              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:latest
+          # Convert the PUBLIC_IPS environment variable into an array
+          for IP in $PUBLIC_IPS; do
+            echo "Connecting to $IP"
+            echo "$PRIVATE_KEY" > private_key.pem
+            chmod 600 private_key.pem
+            ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP << 'EOF'
+              aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+              docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:latest
+              docker stop springboot-api-container || true
+              docker rm springboot-api-container || true
+              docker run -d --rm --name springboot-api-container -p 8080:8080 \
+                -e DB_URL="${{ secrets.DB_URL }}" \
+                -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+                -e DB_USERNAME="${{ secrets.DB_USERNAME }}" \
+                ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:latest
           EOF
-
-      # SSH and deploy to the second EC2 instance
-      - name: SSH into EC2 instance 2 and run commands
-        env:
-          PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
-        run: |
-          echo "$PRIVATE_KEY" > private_key.pem
-          chmod 600 private_key.pem
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$EC2_PUBLIC_IP_2 << 'EOF'
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:latest
-            docker stop springboot-api-container || true
-            docker rm springboot-api-container || true
-            docker run -d --rm --name springboot-api-container -p 8080:8080 \
-              -e DB_URL="${{ secrets.DB_URL }}" \
-              -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
-              -e DB_USERNAME="${{ secrets.DB_USERNAME }}" \
-              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:latest
-          EOF
-
-      # SSH and deploy to the third EC2 instance
-      - name: SSH into EC2 instance 3 and run commands
-        env:
-          PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
-        run: |
-          echo "$PRIVATE_KEY" > private_key.pem
-          chmod 600 private_key.pem
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$EC2_PUBLIC_IP_3 << 'EOF'
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:latest
-            docker stop springboot-api-container || true
-            docker rm springboot-api-container || true
-            docker run -d --rm --name springboot-api-container -p 8080:8080 \
-              -e DB_URL="${{ secrets.DB_URL }}" \
-              -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
-              -e DB_USERNAME="${{ secrets.DB_USERNAME }}" \
-              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO_NAME }}:latest
-          EOF
+          done
